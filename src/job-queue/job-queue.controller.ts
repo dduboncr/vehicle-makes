@@ -9,6 +9,6 @@ export class JobQueueController {
 
   @Post('/vehicle/ingest')
   async IngestVehicleData() {
-    return await this.jobQueueService.CreateIngestVehicleDataJob();
+    return await this.jobQueueService.CreateIngestAllVehicleMakesJob();
   }
 }

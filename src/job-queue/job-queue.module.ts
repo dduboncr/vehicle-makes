@@ -1,11 +1,17 @@
 import { BullModule } from '@nestjs/bull';
 import { Module } from '@nestjs/common';
 import { JobQueueService, QueueName } from './job-queue.service';
-import { VehicleIngestDataConsumer } from './consumers/vehicle-data.consumer';
+import { IngestAllVehicleMakes } from './consumers/ingest-all-vehicle-makes.consumer';
+import { IngestVehicleType } from './consumers/ingest-vehicle-type.consumer';
 import { JobQueueController } from './job-queue.controller';
+import { VehicleService } from 'src/vehicle/vehicle.service';
+import { HttpModule } from '@nestjs/axios';
+import { VehicleRepository } from 'src/vehicle/vehicle.repository';
+import { PrismaService } from 'src/prisma.service';
 
 @Module({
   imports: [
+    HttpModule,
     BullModule.forRoot({
       url: 'redis://localhost:6379',
       redis: {
@@ -22,7 +28,14 @@ import { JobQueueController } from './job-queue.controller';
     ),
   ],
   controllers: [JobQueueController],
-  providers: [JobQueueService, VehicleIngestDataConsumer],
-  exports: [BullModule],
+  providers: [
+    JobQueueService,
+    IngestAllVehicleMakes,
+    IngestVehicleType,
+    VehicleService,
+    VehicleRepository,
+    PrismaService,
+  ],
+  exports: [],
 })
 export class JobQueueModule {}
