@@ -1,47 +1,66 @@
-# Stage 1: Build the NestJS application
-FROM node:18-alpine AS builder
+FROM node:18-alpine AS base
 
-# Install pnpm globally
-RUN npm install -g pnpm
+# Install dependencies only when needed
+FROM base AS deps
+# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
+RUN apk add --no-cache libc6-compat
 
-# Set working directory
 WORKDIR /app
 
-# Copy pnpm files (pnpm-lock.yaml, package.json)
-COPY pnpm-lock.yaml ./
-COPY package.json ./
+# Install dependencies based on the preferred package manager
+COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
+RUN \
+  if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
+  elif [ -f package-lock.json ]; then npm ci; \
+  elif [ -f pnpm-lock.yaml ]; then yarn global add pnpm && pnpm i --frozen-lockfile; \
+  else echo "Lockfile not found." && exit 1; \
+  fi
 
-# Install dependencies using pnpm
-RUN pnpm install
+COPY prisma ./prisma
 
-# Copy the rest of the source code
+# generate prisma client
+RUN npx prisma generate
+
+
+FROM base AS dev
+
+WORKDIR /app
+
+COPY --from=deps /app/node_modules ./node_modules
+
 COPY . .
 
-# Build the app
-RUN pnpm run build
 
-# Stage 2: Set up production-ready image
-FROM node:18-alpine AS production
+FROM base AS builder
 
-# Install pnpm globally
-RUN npm install -g pnpm
-
-# Set working directory
 WORKDIR /app
 
-# Copy pnpm files and install only production dependencies
-COPY pnpm-lock.yaml ./
-COPY package.json ./
-RUN pnpm install --prod
+COPY --from=deps /app/node_modules ./node_modules
 
-# Copy built files from the builder stage
-COPY --from=builder /app/dist ./dist
+COPY . .
 
-# Copy any assets (like XML) from the source folder
-COPY --from=builder /app/src/*.xml ./dist/src/
+RUN pnpm build
 
-# Expose the application port
-EXPOSE 3000
+# copy ./prisma into existing dist/prisma directory
+COPY prisma ./dist/prisma
 
-# Set the command to run the NestJS app
-CMD ["node", "dist/main"]
+FROM base AS runner
+
+WORKDIR /app
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nestjs
+
+COPY --from=builder --chown=nestjs:nodejs /app/dist ./dist
+COPY --from=builder --chown=nestjs:nodejs /app/node_modules ./node_modules
+
+# Move Assets To Working Directory 
+RUN mv ./dist/assets ./assets
+
+RUN mkdir -p ./logs
+RUN chmod 755 ./logs
+
+
+USER nestjs
+
+CMD [ "node", "dist/src/main.js" ]
