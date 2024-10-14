@@ -31,7 +31,7 @@ export class IngestAllVehicleMakes {
   }
 
   @OnQueueCompleted()
-  onQueueCompleted<T>(job: BullVehicleIngestDataJob) {
+  onQueueCompleted(job: BullVehicleIngestDataJob) {
     this.logger.log(
       `${QueueName.INGEST_ALL_VEHICLE_MAKES} job ${job.id} finished processing`,
     );
@@ -46,22 +46,27 @@ export class IngestAllVehicleMakes {
 
   @Process({ concurrency: 1 })
   async processJob(job: BullVehicleIngestDataJob) {
-    this.logger.log(
-      `${QueueName.INGEST_ALL_VEHICLE_MAKES} processing job ${job.id}`,
-    );
-
-    const data = await this.vehicleService.getAllMakesXml();
-
-    const makes = data.Response.Results.AllVehicleMakes.map((make) => ({
-      makeId: make.Make_ID,
-      makeName: make.Make_Name,
-    }));
-
-    makes.forEach((make) => {
-      this.jobQueueService.CreateIngestVehicleTypeJob(
-        make.makeId,
-        make.makeName,
+    try {
+      this.logger.log(
+        `${QueueName.INGEST_ALL_VEHICLE_MAKES} processing job ${job.id}`,
       );
-    });
+
+      const data = await this.vehicleService.getAllMakesXml();
+
+      const makes = data.Response.Results.AllVehicleMakes.map((make) => ({
+        makeId: make.Make_ID,
+        makeName: make.Make_Name,
+      }));
+
+      makes.forEach((make) => {
+        this.jobQueueService.CreateIngestVehicleTypeJob(
+          make.makeId,
+          make.makeName,
+        );
+      });
+    } catch (e) {
+      this.logger.error(`error processing job ${job.id}: ${e}`);
+      return;
+    }
   }
 }

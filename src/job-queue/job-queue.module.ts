@@ -15,7 +15,9 @@ import { PrismaService } from 'src/prisma.service';
     BullModule.forRoot({
       url: 'redis://localhost:6379',
       redis: {
+        connectTimeout: 10000,
         reconnectOnError: () => {
+          console.log('reconnecting');
           return true;
         },
       },

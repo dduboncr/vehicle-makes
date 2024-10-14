@@ -1,0 +1,59 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type VehicleMakeCountAggregate {
+  id: Int!
+  makeId: Int!
+  makeName: Int!
+  _all: Int!
+}
+
+type VehicleMakeAvgAggregate {
+  id: Float
+}
+
+type VehicleMakeSumAggregate {
+  id: Int
+}
+
+type VehicleMakeMinAggregate {
+  id: Int
+  makeId: String
+  makeName: String
+}
+
+type VehicleMakeMaxAggregate {
+  id: Int
+  makeId: String
+  makeName: String
+}
+
+type VehicleMakeCount {
+  types: Int!
+}
+
+type VehicleTypeCount {
+  VehicleMake: Int!
+}
+
+type VehicleType {
+  id: ID!
+  typeId: String!
+  name: String!
+  VehicleMake: [VehicleMake!]
+  _count: VehicleTypeCount!
+}
+
+type VehicleMake {
+  id: ID!
+  makeId: String!
+  makeName: String!
+  types: [VehicleType!]
+  _count: VehicleMakeCount!
+}
+
+type Query {
+  makes: [VehicleMake!]!
+  make(id: String!): VehicleMake
+}

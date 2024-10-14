@@ -5,20 +5,35 @@ import { PrismaService } from 'src/prisma.service';
 export class VehicleRepository {
   constructor(private prisma: PrismaService) {}
 
+  findVehicleMakeById(id: string) {
+    return this.prisma.make.findUnique({
+      where: { makeId: id },
+      include: { types: true },
+    });
+  }
+
+  async findAllVehicleMakes() {
+    const makes = await this.prisma.make.findMany({
+      include: { types: true },
+    });
+    console.log(JSON.stringify(makes, null, 2));
+    return makes;
+  }
+
   async createVehicleMake(data: { makeId: string; makeName: string }) {
-    const exist = await this.prisma.vehicleMake.findFirst({
+    const exist = await this.prisma.make.findFirst({
       where: { makeId: data.makeId },
       select: { makeId: true },
     });
 
     if (exist) {
-      return this.prisma.vehicleMake.update({
+      return this.prisma.make.update({
         where: { makeId: data.makeId },
         data,
       });
     }
 
-    return this.prisma.vehicleMake.create({ data });
+    return this.prisma.make.create({ data });
   }
 
   async createVehicleType(data: {
@@ -26,23 +41,11 @@ export class VehicleRepository {
     name: string;
     makeId: string;
   }) {
-    const exist = await this.prisma.vehicleType.findFirst({
-      where: { typeId: data.typeId },
-      select: { typeId: true },
-    });
-
-    if (exist) {
-      return this.prisma.vehicleType.update({
-        where: { typeId: data.typeId },
-        data,
-      });
-    }
-
-    return this.prisma.vehicleType.create({
+    return this.prisma.type.create({
       data: {
-        vehicleMakeId: data.makeId,
         name: data.name,
         typeId: data.typeId,
+        makeId: data.makeId,
       },
     });
   }

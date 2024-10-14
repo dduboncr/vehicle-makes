@@ -8,22 +8,29 @@ generator client {
   provider = "prisma-client-js"
 }
 
+generator nestgraphql {
+  provider = "node node_modules/prisma-nestjs-graphql"
+  output   = "../src/shared/prismagraphql"
+  reExport = Directories
+}
+
 datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
-model VehicleMake {
-  id       Int           @id @default(autoincrement())
-  makeId   String        @unique
+model Make {
+  id       Int    @id @default(autoincrement())
+  makeId   String @unique
   makeName String
-  types    VehicleType[]
+  types    Type[]
 }
 
-model VehicleType {
-  id            Int          @id @default(autoincrement())
-  typeId        String       @unique
-  name          String
-  VehicleMake   VehicleMake? @relation(fields: [vehicleMakeId], references: [makeId])
-  vehicleMakeId String?
+model Type {
+  id     Int    @id @default(autoincrement())
+  typeId String
+  name   String
+
+  make   Make   @relation(fields: [makeId], references: [makeId])
+  makeId String
 }
